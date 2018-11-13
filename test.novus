@@ -1,0 +1,5 @@
+var hello = fun(name) {
+    print("Hello, " + name);
+}
+
+hello("world!");
