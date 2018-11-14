@@ -1,6 +1,6 @@
-VERSION=`git rev-parse HEAD`
+VERSION=`date -u +%Y.%m.%d.%H%M%S`
 
-LDFLAGS=-ldflags "-X github.com/rroe/Novus.Version=${VERSION}"
+LDFLAGS=-ldflags ""-X main.Version=${VERSION}"
 
 clean:
 	rm novus || true

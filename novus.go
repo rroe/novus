@@ -13,7 +13,10 @@ import (
 	"github.com/rroe/novus/repl"
 )
 
-// TODO: Add >= and <=, add reading from file, change errors, add installation + Novus stdlib
+var (
+	Version string
+)
+
 func main() {
 	args := os.Args[1:]
 
@@ -22,14 +25,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		run_file(string(contents))
+		runFile(string(contents))
 	} else {
-		fmt.Println("Starting Novus REPL...")
+		fmt.Printf("Novus v%s\n", Version)
 		repl.Start(os.Stdin, os.Stdout)
 	}
 }
 
-func run_file(content string) {
+func runFile(content string) {
 	env := object.NewEnvironment()
 	l := lexer.New(content)
 	p := parser.New(l)
