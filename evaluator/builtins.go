@@ -9,8 +9,14 @@ var builtins = map[string]*object.Builtin{
 	"len": &object.Builtin{
 		Fn: runtime.ListLength,
 	},
+	"range": &object.Builtin{
+		Fn: runtime.Range,
+	},
 	"print": &object.Builtin{
 		Fn: runtime.Print,
+	},
+	"input": &object.Builtin{
+		Fn: runtime.Input,
 	},
 	"first": &object.Builtin{
 		Fn: runtime.ListFirst,
@@ -29,6 +35,9 @@ var builtins = map[string]*object.Builtin{
 	},
 	"string": &object.Builtin{
 		Fn: runtime.TypeString,
+	},
+	"str_join": &object.Builtin{
+		Fn: runtime.StringJoin,
 	},
 	"file_write_lines": &object.Builtin{
 		Fn: runtime.FileWriteLines,

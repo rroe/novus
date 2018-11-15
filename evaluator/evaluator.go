@@ -1,7 +1,9 @@
 package evaluator
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 
 	"github.com/rroe/novus/ast"
 	"github.com/rroe/novus/object"
@@ -13,7 +15,10 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
-func Eval(node ast.Node, env *object.Environment) object.Object {
+var evalFunc func(*object.Environment, []object.Object) object.Object
+
+func Eval(node ast.Node, env *object.Environment, eval func(*object.Environment, []object.Object) object.Object) object.Object {
+	evalFunc = eval
 	switch node := node.(type) {
 
 	// Statements
@@ -24,17 +29,17 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalBlockStatement(node, env)
 
 	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
+		return Eval(node.Expression, env, evalFunc)
 
 	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
+		val := Eval(node.ReturnValue, env, evalFunc)
 		if isError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
 
 	case *ast.LetStatement:
-		val := Eval(node.Value, env)
+		val := Eval(node.Value, env, evalFunc)
 		if isError(val) {
 			return val
 		}
@@ -54,19 +59,19 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nativeBoolToBooleanObject(node.Value)
 
 	case *ast.PrefixExpression:
-		right := Eval(node.Right, env)
+		right := Eval(node.Right, env, evalFunc)
 		if isError(right) {
 			return right
 		}
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
-		left := Eval(node.Left, env)
+		left := Eval(node.Left, env, evalFunc)
 		if isError(left) {
 			return left
 		}
 
-		right := Eval(node.Right, env)
+		right := Eval(node.Right, env, evalFunc)
 		if isError(right) {
 			return right
 		}
@@ -85,7 +90,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Function{Parameters: params, Env: env, Body: body}
 
 	case *ast.CallExpression:
-		function := Eval(node.Function, env)
+		function := Eval(node.Function, env, evalFunc)
 		if isError(function) {
 			return function
 		}
@@ -105,11 +110,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Array{Elements: elements}
 
 	case *ast.IndexExpression:
-		left := Eval(node.Left, env)
+		left := Eval(node.Left, env, evalFunc)
 		if isError(left) {
 			return left
 		}
-		index := Eval(node.Index, env)
+		index := Eval(node.Index, env, evalFunc)
 		if isError(index) {
 			return index
 		}
@@ -127,7 +132,7 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 	var result object.Object
 
 	for _, statement := range program.Statements {
-		result = Eval(statement, env)
+		result = Eval(statement, env, evalFunc)
 
 		switch result := result.(type) {
 		case *object.ReturnValue:
@@ -147,7 +152,7 @@ func evalBlockStatement(
 	var result object.Object
 
 	for _, statement := range block.Statements {
-		result = Eval(statement, env)
+		result = Eval(statement, env, evalFunc)
 
 		if result != nil {
 			rt := result.Type()
@@ -339,15 +344,15 @@ func evalIfExpression(
 	ie *ast.IfExpression,
 	env *object.Environment,
 ) object.Object {
-	condition := Eval(ie.Condition, env)
+	condition := Eval(ie.Condition, env, evalFunc)
 	if isError(condition) {
 		return condition
 	}
 
 	if isTruthy(condition) {
-		return Eval(ie.Consequence, env)
+		return Eval(ie.Consequence, env, evalFunc)
 	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
+		return Eval(ie.Alternative, env, evalFunc)
 	} else {
 		return NULL
 	}
@@ -365,7 +370,65 @@ func evalIdentifier(
 		return builtin
 	}
 
+	// Function shims to prevent cyclical imports
+	if node.Value == "eval" {
+		return &object.Builtin{
+			Fn: func(args ...object.Object) object.Object {
+				return evalFunc(env, args)
+			},
+		}
+	}
+
+	if node.Value == "include" {
+		return &object.Builtin{
+			Fn: func(args ...object.Object) object.Object {
+
+				incl := func(args ...object.Object) object.Object {
+					if len(args) != 1 {
+						return NewError("Wrong number of arguments given: got=%d, want=1",
+							len(args))
+					}
+					val := args[0].Inspect()
+
+					lines, err := readLines(val)
+					if err != nil {
+						return NewError("Unable to read file: %s",
+							err.Error())
+					}
+
+					numElems := len(lines)
+					var out string
+
+					for k, v := range lines {
+						out = out + v
+						if k != (numElems - 1) {
+							out = out + " "
+						}
+					}
+					return evalFunc(env, []object.Object{&object.String{Value: out}})
+				}
+				incl(args...)
+				return TRUE
+			},
+		}
+	}
+
 	return NewError("identifier not found: " + node.Value)
+}
+
+func readLines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
 
 func isTruthy(obj object.Object) bool {
@@ -399,7 +462,7 @@ func evalExpressions(
 	var result []object.Object
 
 	for _, e := range exps {
-		evaluated := Eval(e, env)
+		evaluated := Eval(e, env, evalFunc)
 		if isError(evaluated) {
 			return []object.Object{evaluated}
 		}
@@ -414,7 +477,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 	case *object.Function:
 		extendedEnv := extendFunctionEnv(fn, args)
-		evaluated := Eval(fn.Body, extendedEnv)
+		evaluated := Eval(fn.Body, extendedEnv, evalFunc)
 		return unwrapReturnValue(evaluated)
 
 	case *object.Builtin:
@@ -476,7 +539,7 @@ func evalHashLiteral(
 	pairs := make(map[object.HashKey]object.HashPair)
 
 	for keyNode, valueNode := range node.Pairs {
-		key := Eval(keyNode, env)
+		key := Eval(keyNode, env, evalFunc)
 		if isError(key) {
 			return key
 		}
@@ -486,7 +549,7 @@ func evalHashLiteral(
 			return NewError("unusable as hash key: %s", key.Type())
 		}
 
-		value := Eval(valueNode, env)
+		value := Eval(valueNode, env, evalFunc)
 		if isError(value) {
 			return value
 		}

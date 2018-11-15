@@ -13,7 +13,7 @@ import (
 
 const PROMPT = "$> "
 
-func Start(in io.Reader, out io.Writer, std string) {
+func Start(in io.Reader, out io.Writer, std string, eval func(*object.Environment, []object.Object) object.Object) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
 
@@ -26,7 +26,7 @@ func Start(in io.Reader, out io.Writer, std string) {
 		panic("Unable to load stdlib - exiting!")
 	}
 
-	evaluated := evaluator.Eval(program, env)
+	evaluated := evaluator.Eval(program, env, eval)
 	if evaluated != nil {
 		// Do nothing, just continue
 	}
@@ -48,7 +48,7 @@ func Start(in io.Reader, out io.Writer, std string) {
 			continue
 		}
 
-		evaluated := evaluator.Eval(program, env)
+		evaluated := evaluator.Eval(program, env, eval)
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")

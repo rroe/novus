@@ -8,3 +8,12 @@ var map = fun(func, coll) {
     };
     ret iterable(coll, []);
 };
+
+var str_concat = fun(lhs, rhs) {
+    ret string(lhs) + string(rhs);
+};
+
+var file_read = fun(path) {
+    var lines = file_read_lines(path);
+    ret str_join(lines, " ");
+};

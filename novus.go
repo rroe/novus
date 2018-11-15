@@ -34,7 +34,7 @@ func main() {
 		runFile(string(data) + string(contents))
 	} else {
 		fmt.Printf("Novus v%s\n", Version)
-		repl.Start(os.Stdin, os.Stdout, string(data))
+		repl.Start(os.Stdin, os.Stdout, string(data), eval)
 	}
 }
 
@@ -48,10 +48,28 @@ func runFile(content string) {
 		printParserErrors(os.Stdout, p.Errors())
 	}
 
-	evaluated := evaluator.Eval(program, env)
+	evaluated := evaluator.Eval(program, env, eval)
 	if evaluated != nil {
 		// Do nothing
 	}
+}
+
+func eval(env *object.Environment, args []object.Object) object.Object {
+	for _, arg := range args {
+		content := arg.Inspect()
+		l := lexer.New(content)
+		p := parser.New(l)
+
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParserErrors(os.Stdout, p.Errors())
+		}
+
+		ok := evaluator.Eval(program, env, eval)
+		_ = ok
+	}
+
+	return &object.Boolean{Value: true}
 }
 
 func printParserErrors(out io.Writer, errors []string) {
