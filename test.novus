@@ -1,5 +1,5 @@
-var hello = fun(name) {
-    print("Hello, " + name);
-}
+var test = [1, 2, 3, 4, 5];
 
-hello("world!");
+map(print, test);
+
+print("TEST");

@@ -20,15 +20,21 @@ var (
 func main() {
 	args := os.Args[1:]
 
+	data, err := Asset("novus_std/stdlib.novus")
+
+	if err != nil {
+		panic("Unable to load stdlib: " + err.Error())
+	}
+
 	if len(args) == 1 {
 		contents, err := ioutil.ReadFile(args[0])
 		if err != nil {
 			panic(err)
 		}
-		runFile(string(contents))
+		runFile(string(data) + string(contents))
 	} else {
 		fmt.Printf("Novus v%s\n", Version)
-		repl.Start(os.Stdin, os.Stdout)
+		repl.Start(os.Stdin, os.Stdout, string(data))
 	}
 }
 
@@ -44,7 +50,7 @@ func runFile(content string) {
 
 	evaluated := evaluator.Eval(program, env)
 	if evaluated != nil {
-
+		// Do nothing
 	}
 }
 

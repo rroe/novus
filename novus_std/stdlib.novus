@@ -1,0 +1,10 @@
+var map = fun(func, coll) {
+    var iterable = fun(collec, procd) {
+        if (len(collec) == 0) {
+            ret procd;
+        } else {
+            ret iterable(rest(collec), push(procd, func(first(collec))));
+        }
+    };
+    ret iterable(coll, []);
+};

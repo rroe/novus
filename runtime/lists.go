@@ -62,11 +62,11 @@ func ListLast(args ...object.Object) object.Object {
 
 func ListRest(args ...object.Object) object.Object {
 	if len(args) != 1 {
-		return NewError("Wrong number of arguments given: got=%d, want=1",
+		return MakeError("Wrong number of arguments given: got=%d, want=1",
 			len(args))
 	}
 	if args[0].Type() != object.ARRAY_OBJ {
-		return NewError("Argument to `rest` must be ARRAY, got %s",
+		return MakeError("Argument to `rest` must be ARRAY, got %s",
 			args[0].Type())
 	}
 
@@ -83,11 +83,11 @@ func ListRest(args ...object.Object) object.Object {
 
 func ListPush(args ...object.Object) object.Object {
 	if len(args) != 2 {
-		return NewError("Wrong number of arguments given: got=%d, want=2",
+		return MakeError("Wrong number of arguments given: got=%d, want=2",
 			len(args))
 	}
 	if args[0].Type() != object.ARRAY_OBJ {
-		return NewError("Argument to `push` must be ARRAY, got %s",
+		return MakeError("Argument to `push` must be ARRAY, got %s",
 			args[0].Type())
 	}
 

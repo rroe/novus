@@ -13,9 +13,23 @@ import (
 
 const PROMPT = "$> "
 
-func Start(in io.Reader, out io.Writer) {
+func Start(in io.Reader, out io.Writer, std string) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
+
+	l := lexer.New(std)
+	p := parser.New(l)
+
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParserErrors(out, p.Errors())
+		panic("Unable to load stdlib - exiting!")
+	}
+
+	evaluated := evaluator.Eval(program, env)
+	if evaluated != nil {
+		// Do nothing, just continue
+	}
 
 	for {
 		fmt.Printf(PROMPT)
