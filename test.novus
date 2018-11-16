@@ -1,1 +1,5 @@
-print("hello, world!");
+var add = fun(x, y) { ret x + y; };
+
+var sum = reduce(add, range(1, 10000));
+
+print(sum);

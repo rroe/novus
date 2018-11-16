@@ -3,11 +3,25 @@ var map = fun(func, coll) {
         if (len(collec) == 0) {
             ret procd;
         } else {
-            ret iterable(rest(collec), push(procd, func(first(collec))));
+            ret iterable(rest(collec), func(procd, first(collec)));
         }
     };
     ret iterable(coll, []);
 };
+
+var reduce = fun(func, coll) {
+    var iterable = fun(collec, procd) {
+        if (len(collec) <= 0) {
+            ret procd;
+        } else {
+            ret iterable(rest(collec), func(first(collec), procd));
+        }
+    };
+    var f = first(coll);
+    var r = rest(coll);
+    var out = func(f, first(r));
+    ret iterable(rest(r), out);
+}
 
 var str_concat = fun(lhs, rhs) {
     ret string(lhs) + string(rhs);
