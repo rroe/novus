@@ -38,30 +38,13 @@ func TypeString(args ...object.Object) object.Object {
 	return &object.String{Value: args[0].Inspect()}
 }
 
-func StringJoin(args ...object.Object) object.Object {
-	if len(args) != 2 {
-		return MakeError("Wrong number of arguments given: got=%d, want=2",
+func TypeOf(args ...object.Object) object.Object {
+	if len(args) != 1 {
+		return MakeError("Wrong number of arguments given: got=%d, want=1",
 			len(args))
 	}
-	if (args[0].Type() == object.ARRAY_OBJ) == false {
-		return MakeError("First argument to `str_join` must be ARRAY got %s",
-			args[0].Type())
+	if args[0].Type() == object.BUILTIN_OBJ {
+		return &object.String{Value: object.FUNCTION_OBJ}
 	}
-
-	strs := args[0].(*object.Array)
-	delim := args[1].Inspect()
-
-	numElems := len(strs.Elements)
-
-	var out string
-
-	for k, v := range strs.Elements {
-		val := v.Inspect()
-		out = out + val
-		if k != (numElems - 1) {
-			out = out + delim
-		}
-	}
-
-	return &object.String{Value: out}
+	return &object.String{Value: string(args[0].Type())}
 }
